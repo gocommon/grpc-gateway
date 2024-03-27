@@ -133,6 +133,8 @@ type Registry struct {
 	// RPC methods that have no HttpRule annotation.
 	generateUnboundMethods bool
 
+	generateRPCMethods bool
+
 	// omitPackageDoc, if false, causes a package comment to be included in the generated code.
 	omitPackageDoc bool
 
@@ -682,6 +684,11 @@ func (r *Registry) SetSimpleOperationIDs(use bool) {
 // GetSimpleOperationIDs returns simpleOperationIDs
 func (r *Registry) GetSimpleOperationIDs() bool {
 	return r.simpleOperationIDs
+}
+
+// SetGenerateRPCMethods sets generateRPCMethods
+func (r *Registry) SetGenerateRPCMethods(rpc bool) {
+	r.generateRPCMethods = rpc
 }
 
 // SetWarnOnUnboundMethods sets warnOnUnboundMethods

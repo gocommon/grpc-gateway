@@ -38,10 +38,22 @@ func (r *Registry) loadServices(file *File) error {
 				grpclog.Errorf("Failed to extract HttpRule from %s.%s: %v", svc.GetName(), md.GetName(), err)
 				return err
 			}
-			optsList := r.LookupExternalHTTPRules((&Method{Service: svc, MethodDescriptorProto: md}).FQMN())
-			if opts != nil {
-				optsList = append(optsList, opts)
+
+			var optsList []*options.HttpRule
+			if r.generateRPCMethods {
+				defaultOpts, err := defaultAPIOptions(svc, md)
+				if err != nil {
+					grpclog.Errorf("Failed to generate default HttpRule from %s.%s: %v", svc.GetName(), md.GetName(), err)
+					return err
+				}
+				optsList = append(optsList, defaultOpts)
+			} else {
+				optsList = r.LookupExternalHTTPRules((&Method{Service: svc, MethodDescriptorProto: md}).FQMN())
+				if opts != nil {
+					optsList = append(optsList, opts)
+				}
 			}
+
 			if len(optsList) == 0 {
 				if r.generateUnboundMethods {
 					defaultOpts, err := defaultAPIOptions(svc, md)
