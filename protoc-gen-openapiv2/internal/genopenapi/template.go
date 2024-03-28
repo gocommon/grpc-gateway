@@ -1565,6 +1565,18 @@ func renderServices(services []*descriptor.Service, paths *openapiPathsObject, r
 					return err
 				}
 				opts, err := getMethodOpenAPIOption(reg, meth)
+
+				if reg.GetUseOptionTemplate() {
+					if opts == nil {
+						opts = new(openapi_options.Operation)
+					}
+					if opts.Summary == "" {
+						opts.Summary = meth.FQMN()
+					}
+
+					opts.Description = opts.Description + reg.GetDefaultOptionTemplate()
+				}
+
 				if opts != nil {
 					if err != nil {
 						panic(err)
@@ -1576,6 +1588,11 @@ func renderServices(services []*descriptor.Service, paths *openapiPathsObject, r
 					if opts.Summary != "" {
 						operationObject.Summary = opts.Summary
 					}
+
+					if reg.GetUseOptionTemplate() {
+						opts.Description = methodOptionTemplateExecute(opts.Description, meth, reg)
+					}
+
 					if opts.Description != "" {
 						operationObject.Description = opts.Description
 					}
@@ -2468,7 +2485,7 @@ func enumValueProtoComments(reg *descriptor.Registry, enum *descriptor.Enum) str
 
 func protoComments(reg *descriptor.Registry, file *descriptor.File, outers []string, typeName string, typeIndex int32, fieldPaths ...int32) string {
 	if file.SourceCodeInfo == nil {
-		fmt.Fprintln(os.Stderr, file.GetName(), "descriptor.File should not contain nil SourceCodeInfo")
+		// fmt.Fprintln(os.Stderr, file.GetName(), "descriptor.File should not contain nil SourceCodeInfo")
 		return ""
 	}
 
@@ -2545,6 +2562,55 @@ func goTemplateComments(comment string, data interface{}, reg *descriptor.Regist
 		return err.Error()
 	}
 	if err := tpl.Execute(&temp, data); err != nil {
+		// If there is an error executing the templating insert the error as string in the comment
+		// to make it easier to debug the error
+		return err.Error()
+	}
+	return temp.String()
+}
+
+func methodOptionTemplateExecute(tmp string, meth *descriptor.Method, reg *descriptor.Registry) string {
+	var temp bytes.Buffer
+	tpl, err := template.New("").Funcs(template.FuncMap{
+		// Grabs title and description from a field
+		"fieldDesc": func(field *descriptor.Field) string {
+			schema, err := getFieldOpenAPIOption(reg, field)
+			if err != nil {
+				return ""
+			}
+
+			if schema == nil {
+				return ""
+			}
+
+			return strings.ReplaceAll(schema.Description, "\n", "<br>")
+		},
+		"messagefileds": func(field *descriptor.Field) []*descriptor.Field {
+			msg, err := reg.LookupMsg("", field.GetTypeName())
+			if err != nil || msg == nil {
+				return []*descriptor.Field{}
+			}
+
+			return msg.Fields
+		},
+		"baseTypeName": func(typeName string) string {
+			arr := strings.Split(typeName, ".")
+			name, _ := strings.CutPrefix(arr[len(arr)-1], "TYPE_")
+			return name
+		},
+		"arg": func(name string) string {
+			if v, f := reg.GetGoTemplateArgs()[name]; f {
+				return v
+			}
+			return fmt.Sprintf("goTemplateArg %s not found", name)
+		},
+	}).Parse(tmp)
+	if err != nil {
+		// If there is an error parsing the templating insert the error as string in the comment
+		// to make it easier to debug the template error
+		return err.Error()
+	}
+	if err := tpl.Execute(&temp, meth); err != nil {
 		// If there is an error executing the templating insert the error as string in the comment
 		// to make it easier to debug the error
 		return err.Error()

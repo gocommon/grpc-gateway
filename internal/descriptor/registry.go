@@ -81,6 +81,9 @@ type Registry struct {
 	// in your protofile comments
 	useGoTemplate bool
 
+	useOptionTemplate     bool
+	defaultOptionTemplate string
+
 	// goTemplateArgs specifies a list of key value pair inputs to be displayed in Go templates
 	goTemplateArgs map[string]string
 
@@ -607,6 +610,37 @@ func (r *Registry) SetUseGoTemplate(use bool) {
 // GetUseGoTemplate returns useGoTemplate
 func (r *Registry) GetUseGoTemplate() bool {
 	return r.useGoTemplate
+}
+
+func (r *Registry) SetUseOptionTemplate(use bool) {
+	r.useOptionTemplate = use
+}
+
+func (r *Registry) GetUseOptionTemplate() bool {
+	return r.useOptionTemplate
+}
+
+var defaultMethodOptionTemplate = `
+## {{.RequestType.Name}}
+| Field ID    | Name      | Type                                                       | Description                  |
+| ----------- | --------- | ---------------------------------------------------------  | ---------------------------- | {{range .RequestType.Fields}}
+| {{.Number}} | {{.Name}} | {{if eq .Label.String "LABEL_REPEATED"}}[]{{end}}{{if eq .Type.String "TYPE_MESSAGE"}}{{baseTypeName .TypeName}}{{else}}{{baseTypeName .Type.String}}{{end}} | {{fieldDesc .}} | {{end}}
+
+## {{.ResponseType.Name}}
+| Field ID    | Name      | Type                                                       | Description                  |
+| ----------- | --------- | ---------------------------------------------------------- | ---------------------------- | {{range .ResponseType.Fields}}
+| {{.Number}} | {{.Name}} | {{if eq .Label.String "LABEL_REPEATED"}}[]{{end}}{{if eq .Type.String "TYPE_MESSAGE"}}{{baseTypeName .TypeName}}{{else}}{{baseTypeName .Type.String}}{{end}} | {{fieldDesc .}}| {{end}}
+`
+
+func (r *Registry) SetDefaultOptionTemplate(tmp string) {
+	r.defaultOptionTemplate = tmp
+}
+
+func (r *Registry) GetDefaultOptionTemplate() string {
+	if r.defaultOptionTemplate == "" {
+		return defaultMethodOptionTemplate
+	}
+	return r.defaultOptionTemplate
 }
 
 func (r *Registry) SetGoTemplateArgs(kvs []string) {
