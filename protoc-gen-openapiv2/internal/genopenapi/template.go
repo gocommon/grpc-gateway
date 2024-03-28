@@ -1570,9 +1570,8 @@ func renderServices(services []*descriptor.Service, paths *openapiPathsObject, r
 					if opts == nil {
 						opts = new(openapi_options.Operation)
 					}
-					if opts.Summary == "" {
-						opts.Summary = meth.FQMN()
-					}
+
+					opts.Summary = meth.FQMN() + "  " + opts.Summary
 
 					opts.Description = opts.Description + reg.GetDefaultOptionTemplate()
 				}
