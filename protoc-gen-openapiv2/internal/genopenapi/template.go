@@ -2594,8 +2594,12 @@ func methodOptionTemplateExecute(tmp string, meth *descriptor.Method, reg *descr
 		},
 		"baseTypeName": func(typeName string) string {
 			arr := strings.Split(typeName, ".")
-			name, _ := strings.CutPrefix(arr[len(arr)-1], "TYPE_")
-			return name
+			name := arr[len(arr)-1]
+			if !strings.HasPrefix(name, "TYPE_") {
+				return name
+			}
+			return name[len("TYPE_"):]
+
 		},
 		"arg": func(name string) string {
 			if v, f := reg.GetGoTemplateArgs()[name]; f {
