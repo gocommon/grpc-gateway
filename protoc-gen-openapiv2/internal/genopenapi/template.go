@@ -1570,10 +1570,6 @@ func renderServices(services []*descriptor.Service, paths *openapiPathsObject, r
 					if opts == nil {
 						opts = new(openapi_options.Operation)
 					}
-
-					opts.Summary = meth.FQMN() + "  " + opts.Summary
-
-					opts.Description = opts.Description + reg.GetDefaultOptionTemplate()
 				}
 
 				if opts != nil {
@@ -1584,17 +1580,12 @@ func renderServices(services []*descriptor.Service, paths *openapiPathsObject, r
 					// TODO(ivucica): this would be better supported by looking whether the method is deprecated in the proto file
 					operationObject.Deprecated = opts.Deprecated
 
-					if opts.Summary != "" {
-						operationObject.Summary = opts.Summary
-					}
+					operationObject.Summary = meth.FQMN() + "  " + opts.Summary
 
 					if reg.GetUseOptionTemplate() {
-						opts.Description = methodOptionTemplateExecute(opts.Description, meth, reg)
+						operationObject.Description = methodOptionTemplateExecute(opts.Description+reg.GetDefaultOptionTemplate(), meth, reg)
 					}
 
-					if opts.Description != "" {
-						operationObject.Description = opts.Description
-					}
 					if len(opts.Tags) > 0 {
 						operationObject.Tags = make([]string, len(opts.Tags))
 						copy(operationObject.Tags, opts.Tags)
